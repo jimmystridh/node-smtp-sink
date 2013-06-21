@@ -1,0 +1,24 @@
+{
+  "name": "smtp-sink",
+  "version": "0.0.1",
+  "description": "SMTP server for testing. Accepts e-mails and lists them via a http interface.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository" :
+  { "type" : "git"
+  , "url" : "https://github.com/jimmystridh/smtp-sink.git"
+  },
+  "keywords": [
+    "smtp",
+    "testing"
+  ],
+  "author": "Jimmy Stridh",
+  "license": "MIT",
+  "dependencies": {
+    "smtp-protocol": "0.3.0",
+    "cli": "0.4.4-2"
+  },
+  "bin": "./index.js"
+}
