@@ -2,12 +2,31 @@
 
 Useful for integration testing of e-mail sending or debugging.
 
-Recieved mails are listed on /emails.
+Recieved mails are listed on http://localhost:1080/emails by default, and looks like this:
+```json
+[
+  {
+    to: "bob@example.com",
+    from: "joe@example.com",
+    message: "Hi Bob! "
+  },
+  {
+    to: "joe@example.com",
+    from: "bob@example.com",
+    message: "Hello Joe! "
+  }
+]
+```
+
+##Install
+```bash
+  npm install -g smtp-sink
+```
 
 ##Usage
 ```
 Usage:
-  index.js [OPTIONS] [ARGS]
+  smtp-sink [OPTIONS] [ARGS]
 
 Options: 
   -s, --smtpPort [NUMBER]SMTP port to listen on (Default is 1025)
