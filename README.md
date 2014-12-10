@@ -18,6 +18,9 @@ Recieved mails are listed on http://localhost:1080/emails by default, and looks 
 ]
 ```
 
+**New**
+Received emails can be deleted on http://localhost:1080/delete by default.
+
 ##Install
 ```bash
   npm install -g smtp-sink
