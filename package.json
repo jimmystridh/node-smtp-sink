@@ -1,14 +1,16 @@
 {
   "name": "smtp-sink",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "SMTP server for testing. Accepts e-mails and lists them via a http interface.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository" :
-  { "type" : "git"
-  , "url" : "https://github.com/jimmystridh/node-smtp-sink.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jimmystridh/node-smtp-sink.git"
   },
   "keywords": [
     "smtp",
@@ -19,9 +21,14 @@
   ],
   "author": "Jimmy Stridh",
   "license": "MIT",
-  "dependencies": {
-    "smtp-protocol": "0.3.0",
-    "cli": "0.4.4-2"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "bin": "./index.js"
+  "dependencies": {
+    "cli": "^1.0.1",
+    "smtp-protocol": "^2.4.7"
+  },
+  "bin": {
+    "smtp-sink": "./index.js"
+  }
 }
