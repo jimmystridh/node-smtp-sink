@@ -37,6 +37,63 @@ Options:
   -c, --catch            Catch unanticipated errors
 ```
 
+## Development
+
+### Requirements
+
+- Node.js >= 18.0.0
+
+### Running Tests
+
+The project includes a comprehensive test suite that validates RFC 5321 SMTP compliance:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:smtp        # SMTP protocol compliance tests
+npm run test:http        # HTTP API tests
+npm run test:integration # Integration tests
+
+# Run with coverage report
+npm run test:coverage
+
+# Run in watch mode for development
+npm run test:watch
+```
+
+### Test Coverage
+
+The test suite includes:
+
+**SMTP Protocol Compliance (RFC 5321)**
+- Basic SMTP connection handling
+- EHLO/HELO command support
+- MAIL FROM command validation
+- RCPT TO command with support for 100+ recipients
+- DATA command with multiline and large messages
+- Email headers (including CC/BCC)
+- MIME and content types (text, HTML, multipart)
+- Sequential and concurrent connections
+- Edge cases and error handling
+
+**HTTP API**
+- GET /emails endpoint
+- JSON response validation
+- Email field structure (from, to, message)
+- 404 handling for unknown routes
+- Multiple HTTP methods support
+
+**Integration Tests**
+- End-to-end email flow (SMTP → HTTP)
+- Max email limit enforcement
+- Whitelist functionality
+- Server stability under load
+- Concurrent operations
+
+All tests run in isolated environments with different port configurations to avoid conflicts.
+
 ## LICENSE
 
 (MIT license)
