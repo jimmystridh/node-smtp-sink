@@ -56,3 +56,7 @@ node_modules/
 *.out
 *.gz
 results
+
+# TLS certificates (keep test cert, ignore private keys)
+certs/*.key
+certs/*-key.pem

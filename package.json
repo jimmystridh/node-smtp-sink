@@ -10,6 +10,7 @@
     "test:smtp": "NODE_OPTIONS=--experimental-vm-modules jest test/smtp.test.js --runInBand",
     "test:http": "NODE_OPTIONS=--experimental-vm-modules jest test/http.test.js --runInBand",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest test/integration.test.js --runInBand",
+    "test:tls": "NODE_OPTIONS=--experimental-vm-modules jest test/tls.test.js --runInBand",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --runInBand",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch --runInBand"
   },

@@ -28,14 +28,31 @@ Recieved mails are listed on http://localhost:1080/emails by default, and looks 
 Usage:
   smtp-sink [OPTIONS] [ARGS]
 
-Options: 
+Options:
   -s, --smtpPort [NUMBER]SMTP port to listen on (Default is 1025)
   -h, --httpPort [NUMBER]HTTP port to listen on (Default is 1080)
-  -w, --whitelist STRING Only accept e-mails from these adresses. Accepts 
-                         multiple e-mails comma-separated 
+  -w, --whitelist STRING Only accept e-mails from these adresses. Accepts
+                         multiple e-mails comma-separated
   -m, --max [NUMBER]     Max number of e-mails to keep (Default is 10)
+  -t, --tls              Enable TLS/STARTTLS support
+      --cert PATH        Path to TLS certificate file (Default: certs/cert.pem)
+      --key PATH         Path to TLS private key file (Default: certs/key.pem)
   -c, --catch            Catch unanticipated errors
 ```
+
+### TLS Support
+
+smtp-sink supports optional TLS/STARTTLS encryption for more realistic testing scenarios:
+
+```bash
+# Start with TLS enabled (uses default certificates)
+smtp-sink --tls
+
+# Start with custom certificates
+smtp-sink --tls --cert /path/to/cert.pem --key /path/to/key.pem
+```
+
+A self-signed certificate is included for testing purposes in the `certs/` directory. For production testing, you can provide your own certificates.
 
 ## Development
 
@@ -55,6 +72,7 @@ npm test
 npm run test:smtp        # SMTP protocol compliance tests
 npm run test:http        # HTTP API tests
 npm run test:integration # Integration tests
+npm run test:tls         # TLS/STARTTLS tests
 
 # Run with coverage report
 npm run test:coverage
@@ -91,6 +109,15 @@ The test suite includes:
 - Whitelist functionality
 - Server stability under load
 - Concurrent operations
+
+**TLS/STARTTLS Tests**
+- TLS server configuration
+- STARTTLS command support
+- Encrypted email transmission
+- Self-signed certificate handling
+- TLS and plain connection compatibility
+- Security features (large messages, multiple recipients over TLS)
+- Concurrent TLS connections
 
 All tests run in isolated environments with different port configurations to avoid conflicts.
 
