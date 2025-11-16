@@ -2,20 +2,27 @@
 
 Useful for integration testing of e-mail sending or debugging.
 
-Recieved mails are listed on http://localhost:1080/emails by default, and looks like this:
+Received emails are available via HTTP API at http://localhost:1080/emails by default, with rich parsed data:
 ```json
-[
-  {
-    to: "bob@example.com",
-    from: "joe@example.com",
-    message: "Hi Bob! "
-  },
-  {
-    to: "joe@example.com",
-    from: "bob@example.com",
-    message: "Hello Joe! "
-  }
-]
+{
+  "total": 2,
+  "limit": 2,
+  "offset": 0,
+  "emails": [
+    {
+      "id": 0,
+      "from": "joe@example.com",
+      "to": "bob@example.com",
+      "cc": null,
+      "subject": "Hello",
+      "text": "Hi Bob!",
+      "html": "<p>Hi Bob!</p>",
+      "date": "2025-11-16T10:30:00.000Z",
+      "attachments": [],
+      "headers": {...}
+    }
+  ]
+}
 ```
 
 ##Install
@@ -54,6 +61,75 @@ smtp-sink --tls --cert /path/to/cert.pem --key /path/to/key.pem
 
 A self-signed certificate is included for testing purposes in the `certs/` directory. For production testing, you can provide your own certificates.
 
+## HTTP API
+
+smtp-sink provides a RESTful HTTP API for accessing and managing emails:
+
+### Endpoints
+
+**GET /health** - Health check endpoint
+```bash
+curl http://localhost:1080/health
+```
+Returns server status, uptime, and configuration.
+
+**GET /emails** - List all emails (with filtering and pagination)
+```bash
+# Get all emails
+curl http://localhost:1080/emails
+
+# Filter by sender
+curl http://localhost:1080/emails?from=sender@example.com
+
+# Filter by recipient
+curl http://localhost:1080/emails?to=recipient@example.com
+
+# Filter by subject
+curl http://localhost:1080/emails?subject=test
+
+# Pagination
+curl http://localhost:1080/emails?limit=10&offset=0
+
+# Combine filters
+curl "http://localhost:1080/emails?from=test&limit=5"
+```
+
+**GET /emails/:id** - Get specific email by ID
+```bash
+curl http://localhost:1080/emails/0
+```
+
+**DELETE /emails/:id** - Delete specific email
+```bash
+curl -X DELETE http://localhost:1080/emails/0
+```
+
+**DELETE /emails** - Clear all emails
+```bash
+curl -X DELETE http://localhost:1080/emails
+```
+
+### CORS Support
+
+All endpoints include CORS headers (`Access-Control-Allow-Origin: *`), making it easy to use from browser-based testing tools.
+
+### Email Fields
+
+Each email includes these parsed fields:
+- `id` - Unique identifier
+- `from` - Sender address
+- `to` - Recipient address(es)
+- `cc` - CC recipients (if any)
+- `bcc` - BCC recipients (if any)
+- `subject` - Email subject
+- `text` - Plain text content
+- `html` - HTML content (if any)
+- `date` - Email date
+- `messageId` - Message ID header
+- `headers` - All email headers
+- `attachments` - Array of attachment metadata (filename, contentType, size)
+- `raw` - Raw email message
+
 ## Development
 
 ### Requirements
@@ -73,6 +149,7 @@ npm run test:smtp        # SMTP protocol compliance tests
 npm run test:http        # HTTP API tests
 npm run test:integration # Integration tests
 npm run test:tls         # TLS/STARTTLS tests
+npm run test:phase1      # Phase 1 enhancements tests
 
 # Run with coverage report
 npm run test:coverage
@@ -97,11 +174,13 @@ The test suite includes:
 - Edge cases and error handling
 
 **HTTP API**
-- GET /emails endpoint
-- JSON response validation
-- Email field structure (from, to, message)
+- GET /emails endpoint with pagination
+- GET /emails/:id for specific emails
+- DELETE operations (single or all)
+- Filtering by from, to, and subject
+- CORS support
+- Health check endpoint
 - 404 handling for unknown routes
-- Multiple HTTP methods support
 
 **Integration Tests**
 - End-to-end email flow (SMTP → HTTP)
@@ -118,6 +197,12 @@ The test suite includes:
 - TLS and plain connection compatibility
 - Security features (large messages, multiple recipients over TLS)
 - Concurrent TLS connections
+
+**Phase 1 Enhancements Tests**
+- Email parsing with mailparser (structured data extraction)
+- Enhanced HTTP API (filtering, pagination, GET by ID, DELETE)
+- CORS support validation
+- Health check endpoint
 
 All tests run in isolated environments with different port configurations to avoid conflicts.
 

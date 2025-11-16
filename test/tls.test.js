@@ -139,11 +139,11 @@ describe('TLS/STARTTLS Support', () => {
       await setTimeout(500);
 
       const response = await fetch(`http://localhost:${TLS_HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const foundEmail = emails.find(e => e.message.includes(uniqueMarker));
+      const foundEmail = data.emails.find(e => e.text && e.text.includes(uniqueMarker));
       expect(foundEmail).toBeDefined();
-      expect(foundEmail.from).toBe('tls-sender@example.com');
+      expect(foundEmail.from).toContain('tls-sender@example.com');
     });
 
     test('should handle multiple TLS emails', async () => {
@@ -173,9 +173,9 @@ describe('TLS/STARTTLS Support', () => {
       await setTimeout(500);
 
       const response = await fetch(`http://localhost:${TLS_HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const ourEmails = emails.filter(e => e.message.includes(uniqueMarker));
+      const ourEmails = data.emails.filter(e => e.text && e.text.includes(uniqueMarker));
       expect(ourEmails.length).toBeGreaterThanOrEqual(3);
     });
   });

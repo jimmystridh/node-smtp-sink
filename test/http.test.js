@@ -34,7 +34,8 @@ describe('HTTP API', () => {
       expect(response.headers.get('content-type')).toBe('application/json');
 
       const data = await response.json();
-      expect(Array.isArray(data)).toBe(true);
+      expect(data).toHaveProperty('emails');
+      expect(Array.isArray(data.emails)).toBe(true);
     });
 
     test('should return emails after sending', async () => {
@@ -62,9 +63,10 @@ describe('HTTP API', () => {
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
       expect(response.status).toBe(200);
 
-      const emails = await response.json();
-      expect(Array.isArray(emails)).toBe(true);
-      expect(emails.length).toBeGreaterThan(0);
+      const data = await response.json();
+      expect(data).toHaveProperty('emails');
+      expect(Array.isArray(data.emails)).toBe(true);
+      expect(data.emails.length).toBeGreaterThan(0);
     });
 
     test('should include correct email fields', async () => {
@@ -91,17 +93,17 @@ describe('HTTP API', () => {
       await setTimeout(500);
 
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const lastEmail = emails[emails.length - 1];
+      const lastEmail = data.emails[data.emails.length - 1];
 
       expect(lastEmail).toHaveProperty('from');
       expect(lastEmail).toHaveProperty('to');
-      expect(lastEmail).toHaveProperty('message');
+      expect(lastEmail).toHaveProperty('subject');
 
-      expect(lastEmail.from).toBe(testFrom);
+      expect(lastEmail.from).toContain(testFrom);
       expect(lastEmail.to).toContain(testTo);
-      expect(lastEmail.message).toContain(testMessage);
+      expect(lastEmail.text).toContain(testMessage);
     });
 
     test('should handle multiple emails', async () => {
@@ -127,9 +129,9 @@ describe('HTTP API', () => {
       await setTimeout(500);
 
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      expect(emails.length).toBeGreaterThan(2);
+      expect(data.emails.length).toBeGreaterThan(2);
     });
 
     test('should preserve email order', async () => {
@@ -158,11 +160,11 @@ describe('HTTP API', () => {
       await setTimeout(500);
 
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
       // Find our test emails
-      const testEmails = emails.filter(email =>
-        emailTexts.some(text => email.message.includes(text))
+      const testEmails = data.emails.filter(email =>
+        emailTexts.some(text => email.text && email.text.includes(text))
       );
 
       expect(testEmails.length).toBeGreaterThanOrEqual(emailTexts.length);

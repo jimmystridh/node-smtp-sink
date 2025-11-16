@@ -55,20 +55,20 @@ describe('Integration Tests', () => {
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
       expect(response.status).toBe(200);
 
-      const emails = await response.json();
-      expect(emails.length).toBeGreaterThan(0);
+      const data = await response.json();
+      expect(data.emails.length).toBeGreaterThan(0);
 
       // Find our email
-      const foundEmail = emails.find(e =>
-        e.from === testEmail.from &&
+      const foundEmail = data.emails.find(e =>
+        e.from.includes(testEmail.from) &&
         e.to.includes(testEmail.to) &&
-        e.message.includes(testEmail.text)
+        e.text && e.text.includes(testEmail.text)
       );
 
       expect(foundEmail).toBeDefined();
-      expect(foundEmail.from).toBe(testEmail.from);
+      expect(foundEmail.from).toContain(testEmail.from);
       expect(foundEmail.to).toContain(testEmail.to);
-      expect(foundEmail.message).toContain(testEmail.text);
+      expect(foundEmail.text).toContain(testEmail.text);
     });
 
     test('should handle multiple emails in sequence', async () => {
@@ -98,10 +98,10 @@ describe('Integration Tests', () => {
 
       // Retrieve all emails
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
       // Count our emails
-      const ourEmails = emails.filter(e => e.message.includes(uniqueMarker));
+      const ourEmails = data.emails.filter(e => e.text && e.text.includes(uniqueMarker));
       expect(ourEmails.length).toBe(emailCount);
     });
 
@@ -138,9 +138,9 @@ describe('Integration Tests', () => {
 
       // Verify all emails were stored
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const ourEmails = emails.filter(e => e.message.includes(uniqueMarker));
+      const ourEmails = data.emails.filter(e => e.text && e.text.includes(uniqueMarker));
       expect(ourEmails.length).toBe(concurrentCount);
     });
   });
@@ -191,9 +191,9 @@ describe('Integration Tests', () => {
 
       // Check that only MAX_EMAILS are stored
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const ourEmails = emails.filter(e => e.message.includes(uniqueMarker));
+      const ourEmails = data.emails.filter(e => e.text && e.text.includes(uniqueMarker));
       expect(ourEmails.length).toBeLessThanOrEqual(MAX_EMAILS);
     });
   });
@@ -242,9 +242,9 @@ describe('Integration Tests', () => {
 
       // Verify email was accepted
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const foundEmail = emails.find(e => e.message.includes(uniqueMarker));
+      const foundEmail = data.emails.find(e => e.text && e.text.includes(uniqueMarker));
       expect(foundEmail).toBeDefined();
     });
 
@@ -282,9 +282,9 @@ describe('Integration Tests', () => {
 
       // Verify email was NOT stored
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const rejectedEmail = emails.find(e => e.message && e.message.includes(uniqueMarker));
+      const rejectedEmail = data.emails.find(e => e.text && e.text.includes(uniqueMarker));
       expect(rejectedEmail).toBeUndefined();
     });
 
@@ -333,9 +333,9 @@ describe('Integration Tests', () => {
 
       // Verify all emails were accepted
       const response = await fetch(`http://localhost:${HTTP_PORT}/emails`);
-      const emails = await response.json();
+      const data = await response.json();
 
-      const ourEmails = emails.filter(e => e.message.includes(uniqueMarker));
+      const ourEmails = data.emails.filter(e => e.text && e.text.includes(uniqueMarker));
       expect(ourEmails.length).toBe(whitelistedEmails.length);
     });
   });
@@ -388,8 +388,8 @@ describe('Integration Tests', () => {
       const finalResponse = await fetch(`http://localhost:${HTTP_PORT}/emails`);
       expect(finalResponse.status).toBe(200);
 
-      const emails = await finalResponse.json();
-      expect(Array.isArray(emails)).toBe(true);
+      const data = await finalResponse.json();
+      expect(Array.isArray(data.emails)).toBe(true);
     });
   });
 });
