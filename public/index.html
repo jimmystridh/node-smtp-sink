@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>smtp-sink</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 1rem; }
+      header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+      h1 { font-size: 1.25rem; margin: 0; }
+      button { padding: 0.5rem 0.75rem; font-size: 0.9rem; }
+      .meta { color: #888; font-size: 0.9rem; }
+      .list { margin-top: 1rem; display: grid; gap: 0.75rem; }
+      .card { border: 1px solid rgba(127,127,127,.3); border-radius: 8px; padding: 0.75rem; }
+      .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+      .label { font-weight: 600; }
+      pre { white-space: pre-wrap; }
+      .empty { color: #888; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>smtp-sink</h1>
+      <div class="row">
+        <button id="refresh">Refresh</button>
+        <button id="clear">Clear</button>
+      </div>
+    </header>
+    <div class="meta">GET /emails · DELETE /emails · auto-refresh every 2s</div>
+    <div id="root" class="list"></div>
+    <script>
+      const root = document.getElementById('root');
+      const refreshBtn = document.getElementById('refresh');
+      const clearBtn = document.getElementById('clear');
+
+      async function load() {
+        try {
+          const res = await fetch('/emails', { cache: 'no-store' });
+          const emails = await res.json();
+          render(emails);
+        } catch (e) {
+          root.innerHTML = '<div class="empty">Failed to load emails</div>';
+        }
+      }
+      function render(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+          root.innerHTML = '<div class="empty">No emails received yet.</div>';
+          return;
+        }
+        root.innerHTML = items.map((m) => `
+          <div class="card">
+            <div class="row"><span class="label">From:</span><span>${escapeHtml(m.from||'')}</span></div>
+            <div class="row"><span class="label">To:</span><span>${Array.isArray(m.to)?m.to.map(escapeHtml).join(', '):escapeHtml(m.to||'')}</span></div>
+            <div class="row"><span class="label">Subject:</span><span>${escapeHtml(m.subject||'')}</span></div>
+            <div class="row"><span class="label">Date:</span><span>${escapeHtml(m.date||'')}</span></div>
+            ${m.text?`<details><summary>Text</summary><pre>${escapeHtml(m.text)}</pre></details>`:''}
+            ${m.html?`<details><summary>HTML</summary><div>${m.html}</div></details>`:''}
+          </div>
+        `).join('');
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt','"':'&quot;','\'':'&#39;'}[c]));
+      }
+      refreshBtn.addEventListener('click', load);
+      clearBtn.addEventListener('click', async () => {
+        await fetch('/emails', { method: 'DELETE' });
+        await load();
+      });
+      setInterval(load, 2000);
+      load();
+    </script>
+  </body>
+</html>

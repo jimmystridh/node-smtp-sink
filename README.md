@@ -1,63 +1,97 @@
-**smtp-sink is a simple testing smtp server that exposes the received mail on an http endpoint**
+# smtp-sink
 
-Useful for integration testing of e-mail sending or debugging.
+A minimal SMTP sink for local testing. It receives emails via SMTP and exposes them via an HTTP endpoint for inspection.
 
-Recieved mails are listed on http://localhost:1080/emails by default, and looks like this:
+- Default HTTP endpoint: http://localhost:1080/emails
+- Default SMTP port: 1025
+
+Example response from GET /emails:
 ```json
 [
   {
-    to: "bob@example.com",
-    from: "joe@example.com",
-    message: "Hi Bob! "
-  },
-  {
-    to: "joe@example.com",
-    from: "bob@example.com",
-    message: "Hello Joe! "
+    "id": "1712345678901-abc123",
+    "to": ["bob@example.com"],
+    "from": "alice@example.com",
+    "subject": "Hello",
+    "text": "Hi Bob!",
+    "date": "2025-01-01T12:34:56.000Z",
+    "headers": {"subject": "Subject: Hello"}
   }
 ]
 ```
 
-##Install
+## Install (local development)
 ```bash
-  npm install -g smtp-sink
+npm install
 ```
 
-##Usage
+## Run
+- Dev (no build):
+```bash
+npm run dev -- --smtpPort 1025 --httpPort 1080 --max 10 --whitelist bob@example.com,alice@example.com
 ```
-Usage:
-  smtp-sink [OPTIONS] [ARGS]
-
-Options: 
-  -s, --smtpPort [NUMBER]SMTP port to listen on (Default is 1025)
-  -h, --httpPort [NUMBER]HTTP port to listen on (Default is 1080)
-  -w, --whitelist STRING Only accept e-mails from these adresses. Accepts 
-                         multiple e-mails comma-separated 
-  -m, --max [NUMBER]     Max number of e-mails to keep (Default is 10)
-  -c, --catch            Catch unanticipated errors
+- Build and run:
+```bash
+npm run build
+npm start -- --smtpPort 1025 --httpPort 1080
+```
+- Docker (local):
+```bash
+npm run docker:build
+npm run docker:run
+# Or directly
+# docker run --rm -p 1025:1025 -p 1080:1080 smtp-sink:dev --smtpPort 1025 --httpPort 1080
+```
+- Optional global install (publishing flow):
+```bash
+npm install -g smtp-sink
+smtp-sink --smtpPort 1025 --httpPort 1080
 ```
 
-## LICENSE
+### CLI Options
+- -s, --smtpPort <number>   SMTP port to listen on (default 1025)
+- -h, --httpPort <number>   HTTP port to listen on (default 1080)
+- -w, --whitelist <list>    Comma-separated allowed sender addresses (MAIL FROM). Empty = allow all
+- -m, --max <number>        Max number of emails to retain in memory (default 10)
 
-(MIT license)
+### UI and HTTP API
+- UI: open http://localhost:1080/ to view emails (auto-refresh)
+- GET /emails: returns JSON array of recent emails
+- DELETE /emails: clears stored emails (204 No Content)
 
-Copyright (c) 2013 Jimmy Stridh <jimmy@stridh.nu>
+## SMTP TLS (SMTPS)
+Enable TLS for SMTP. You can supply your own key/cert or generate self-signed automatically.
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+- Self-signed for local testing:
+```bash
+npm run dev -- --tls --tlsSelfSigned
+```
+- Provide key/cert files:
+```bash
+npm run dev -- --tls --tlsKey ./certs/key.pem --tlsCert ./certs/cert.pem
+```
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+## Sending a test email
+You can use any SMTP client. For example with Python or swaks; or a raw TCP session:
+```
+$ nc 127.0.0.1 1025
+220 localhost ESMTP
+HELO localhost
+250 Hello localhost
+MAIL FROM:<alice@example.com>
+250 OK
+RCPT TO:<bob@example.com>
+250 OK
+DATA
+354 End data with <CR><LF>.<CR><LF>
+Subject: Hello
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Hi Bob!
+.
+250 OK: queued
+QUIT
+221 Bye
+```
+
+## License
+MIT

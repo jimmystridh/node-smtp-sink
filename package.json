@@ -1,14 +1,28 @@
 {
   "name": "smtp-sink",
-  "version": "0.0.3",
-  "description": "SMTP server for testing. Accepts e-mails and lists them via a http interface.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "0.1.0",
+  "description": "SMTP sink for local testing: receives emails via SMTP and exposes them via HTTP.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "smtp-sink": "dist/cli.js"
   },
-  "repository" :
-  { "type" : "git"
-  , "url" : "https://github.com/jimmystridh/node-smtp-sink.git"
+  "files": [
+    "dist",
+    "public"
+  ],
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --target node20 --dts --out-dir dist --sourcemap --clean --banner.cli='#!/usr/bin/env node' --splitting false",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jimmystridh/node-smtp-sink.git"
   },
   "keywords": [
     "smtp",
@@ -19,9 +33,38 @@
   ],
   "author": "Jimmy Stridh",
   "license": "MIT",
-  "dependencies": {
-    "smtp-protocol": "0.3.0",
-    "cli": "0.4.4-2"
+  "engines": {
+    "node": ">=18"
   },
-  "bin": "./index.js"
+  "dependencies": {
+    "commander": "latest",
+    "mailparser": "latest",
+    "selfsigned": "latest",
+    "smtp-server": "latest"
+  },
+  "devDependencies": {
+    "@types/mailparser": "latest",
+    "@types/node": "latest",
+    "@types/smtp-server": "latest",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-import": "latest",
+    "prettier": "latest",
+    "tsup": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "latest",
+    "nodemailer": "latest"
+  },
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --target node20 --dts --out-dir dist --sourcemap --clean --splitting false",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docker:build": "docker build -t smtp-sink:dev .",
+    "docker:run": "docker run --rm -p 1025:1025 -p 1080:1080 smtp-sink:dev --smtpPort 1025 --httpPort 1080"
+  }
 }
