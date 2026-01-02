@@ -6,18 +6,30 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { generate as generateSelfSigned } from "selfsigned";
-function createRingBuffer(max) {
+import { WebSocketServer, WebSocket } from "ws";
+function createRingBuffer(max, onChange) {
   let arr = [];
   return {
     push(item) {
       arr.push(item);
       while (arr.length > max) arr.splice(0, 1);
+      onChange?.();
     },
     toArray() {
       return [...arr];
     },
     clear() {
       arr = [];
+      onChange?.();
+    },
+    remove(id) {
+      const idx = arr.findIndex((item) => item.id === id);
+      if (idx !== -1) {
+        arr.splice(idx, 1);
+        onChange?.();
+        return true;
+      }
+      return false;
     }
   };
 }
@@ -26,7 +38,18 @@ async function startSink(opts = {}) {
   const httpPort = opts.httpPort ?? 1080;
   const whitelist = (opts.whitelist ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean);
   const max = opts.max ?? 10;
-  const store = createRingBuffer(max);
+  const wsClients = /* @__PURE__ */ new Set();
+  function broadcast(event, data) {
+    const msg = JSON.stringify({ event, data });
+    for (const client of wsClients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
+    }
+  }
+  const store = createRingBuffer(max, () => {
+    broadcast("emails", store.toArray());
+  });
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   let indexHtml = null;
@@ -135,20 +158,43 @@ async function startSink(opts = {}) {
       res.end();
       return;
     }
+    const deleteMatch = req.method === "DELETE" && req.url?.match(/^\/emails\/([^/]+)$/);
+    if (deleteMatch) {
+      const id = decodeURIComponent(deleteMatch[1]);
+      const removed = store.remove(id);
+      if (removed) {
+        res.writeHead(204);
+        res.end();
+      } else {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("Email not found");
+      }
+      return;
+    }
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
   });
   await new Promise((resolve) => {
     httpServer.listen(httpPort, () => resolve());
   });
+  const wss = new WebSocketServer({ server: httpServer });
+  wss.on("connection", (ws) => {
+    wsClients.add(ws);
+    ws.send(JSON.stringify({ event: "emails", data: store.toArray() }));
+    ws.on("close", () => wsClients.delete(ws));
+    ws.on("error", () => wsClients.delete(ws));
+  });
   const resolved = {
     smtp: smtpServer,
     http: httpServer,
+    wss,
     ports: {
       smtp: smtpServer.server.address()?.port ?? smtpPort,
       http: httpServer.address()?.port ?? httpPort
     },
     async stop() {
+      wss.close();
+      for (const client of wsClients) client.terminate();
       await Promise.all([
         new Promise((resolve) => httpServer.close(() => resolve())),
         new Promise((resolve) => smtpServer.close(() => resolve()))

@@ -12,13 +12,15 @@
     "public"
   ],
   "scripts": {
-    "build": "tsup src/cli.ts src/index.ts --format esm --target node20 --dts --out-dir dist --sourcemap --clean --banner.cli='#!/usr/bin/env node' --splitting false",
+    "build": "tsup src/cli.ts src/index.ts --format esm --target node20 --dts --out-dir dist --sourcemap --clean --splitting false",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "lint": "eslint .",
     "format": "prettier -w .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "docker:build": "docker build -t smtp-sink:dev .",
+    "docker:run": "docker run --rm -p 1025:1025 -p 1080:1080 smtp-sink:dev --smtpPort 1025 --httpPort 1080"
   },
   "repository": {
     "type": "git",
@@ -40,31 +42,22 @@
     "commander": "latest",
     "mailparser": "latest",
     "selfsigned": "latest",
-    "smtp-server": "latest"
+    "smtp-server": "latest",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/mailparser": "latest",
     "@types/node": "latest",
     "@types/smtp-server": "latest",
+    "@types/ws": "^8.18.1",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "eslint-plugin-import": "latest",
+    "nodemailer": "latest",
     "prettier": "latest",
     "tsup": "latest",
     "tsx": "latest",
     "typescript": "latest",
-    "vitest": "latest",
-    "nodemailer": "latest"
-  },
-  "scripts": {
-    "build": "tsup src/cli.ts src/index.ts --format esm --target node20 --dts --out-dir dist --sourcemap --clean --splitting false",
-    "dev": "tsx src/cli.ts",
-    "start": "node dist/cli.js",
-    "lint": "eslint .",
-    "format": "prettier -w .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "docker:build": "docker build -t smtp-sink:dev .",
-    "docker:run": "docker run --rm -p 1025:1025 -p 1080:1080 smtp-sink:dev --smtpPort 1025 --httpPort 1080"
+    "vitest": "latest"
   }
 }

@@ -5,6 +5,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { generate as generateSelfSigned } from 'selfsigned'
+import { WebSocketServer, WebSocket } from 'ws'
 
 export type MailRecord = {
   id: string
@@ -31,22 +32,34 @@ export type SinkOptions = {
 export type RunningServers = {
   smtp: SMTPServer
   http: http.Server
+  wss: WebSocketServer
   ports: { smtp: number; http: number }
   stop: () => Promise<void>
 }
 
-function createRingBuffer<T>(max: number) {
+function createRingBuffer<T extends { id: string }>(max: number, onChange?: () => void) {
   let arr: T[] = []
   return {
     push(item: T) {
       arr.push(item)
       while (arr.length > max) arr.splice(0, 1)
+      onChange?.()
     },
     toArray() {
       return [...arr]
     },
     clear() {
       arr = []
+      onChange?.()
+    },
+    remove(id: string) {
+      const idx = arr.findIndex((item) => item.id === id)
+      if (idx !== -1) {
+        arr.splice(idx, 1)
+        onChange?.()
+        return true
+      }
+      return false
     }
   }
 }
@@ -57,7 +70,21 @@ export async function startSink(opts: SinkOptions = {}): Promise<RunningServers>
   const whitelist = (opts.whitelist ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean)
   const max = opts.max ?? 10
 
-  const store = createRingBuffer<MailRecord>(max)
+  // WebSocket clients
+  const wsClients = new Set<WebSocket>()
+
+  function broadcast(event: string, data?: unknown) {
+    const msg = JSON.stringify({ event, data })
+    for (const client of wsClients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(msg)
+      }
+    }
+  }
+
+  const store = createRingBuffer<MailRecord>(max, () => {
+    broadcast('emails', store.toArray())
+  })
 
   // Load UI (if available) at startup
   const __filename = fileURLToPath(import.meta.url)
@@ -173,6 +200,20 @@ export async function startSink(opts: SinkOptions = {}): Promise<RunningServers>
       res.end()
       return
     }
+    // DELETE /emails/:id - delete single email
+    const deleteMatch = req.method === 'DELETE' && req.url?.match(/^\/emails\/([^/]+)$/)
+    if (deleteMatch) {
+      const id = decodeURIComponent(deleteMatch[1])
+      const removed = store.remove(id)
+      if (removed) {
+        res.writeHead(204)
+        res.end()
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' })
+        res.end('Email not found')
+      }
+      return
+    }
     res.writeHead(404, { 'Content-Type': 'text/plain' })
     res.end('Not found')
   })
@@ -181,14 +222,27 @@ export async function startSink(opts: SinkOptions = {}): Promise<RunningServers>
     httpServer.listen(httpPort, () => resolve())
   })
 
+  // WebSocket server attached to HTTP server
+  const wss = new WebSocketServer({ server: httpServer })
+  wss.on('connection', (ws) => {
+    wsClients.add(ws)
+    // Send current emails on connect
+    ws.send(JSON.stringify({ event: 'emails', data: store.toArray() }))
+    ws.on('close', () => wsClients.delete(ws))
+    ws.on('error', () => wsClients.delete(ws))
+  })
+
   const resolved = {
     smtp: smtpServer,
     http: httpServer,
+    wss,
     ports: {
       smtp: (smtpServer.server.address() as any)?.port ?? smtpPort,
       http: (httpServer.address() as any)?.port ?? httpPort
     },
     async stop() {
+      wss.close()
+      for (const client of wsClients) client.terminate()
       await Promise.all([
         new Promise<void>((resolve) => httpServer.close(() => resolve())),
         new Promise<void>((resolve) => smtpServer.close(() => resolve()))

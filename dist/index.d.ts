@@ -1,5 +1,6 @@
 import http from 'http';
 import { SMTPServer } from 'smtp-server';
+import { WebSocketServer } from 'ws';
 
 type MailRecord = {
     id: string;
@@ -24,6 +25,7 @@ type SinkOptions = {
 type RunningServers = {
     smtp: SMTPServer;
     http: http.Server;
+    wss: WebSocketServer;
     ports: {
         smtp: number;
         http: number;
